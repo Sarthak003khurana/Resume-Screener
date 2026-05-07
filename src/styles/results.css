@@ -1,0 +1,198 @@
+:root {
+  --indigo: #6366f1;
+  --indigo-light: #818cf8;
+  --dark-2: #0f172a;
+  --dark-3: #1e293b;
+  --border: rgba(255,255,255,0.07);
+  --text: #f1f5f9;
+  --text-muted: #64748b;
+  --radius: 16px;
+}
+
+/* PANEL */
+
+.results-panel{
+  background: var(--dark-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 400px;
+}
+
+/* TITLE */
+
+.results-panel h2{
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* LIST */
+
+.results-list{
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* CARD */
+
+.result-card{
+  background: linear-gradient(
+    135deg,
+    rgba(99,102,241,0.08),
+    rgba(168,85,247,0.04)
+  );
+
+  border: 1px solid rgba(99,102,241,0.12);
+
+  border-radius: 18px;
+
+  padding: 24px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  transition: all .25s ease;
+}
+
+.result-card:hover{
+  border-color: rgba(99,102,241,0.35);
+  transform: translateY(-2px);
+}
+
+/* NAME */
+
+.candidate-name{
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* SCORE GRID */
+
+.score-grid{
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 16px;
+}
+
+.score-box{
+  background: var(--dark-3);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.score-box span{
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.score-box strong{
+  font-family: 'Syne', sans-serif;
+  font-size: 24px;
+  color: var(--indigo-light);
+}
+
+/* SKILLS */
+
+.skills-section{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skills-section h4{
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.skills-wrap{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.skill-tag{
+  background: rgba(99,102,241,0.14);
+  border: 1px solid rgba(99,102,241,0.22);
+
+  color: var(--indigo-light);
+
+  padding: 8px 14px;
+
+  border-radius: 999px;
+
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.no-skills{
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* AI ANALYSIS */
+
+.ai-analysis{
+  background: rgba(15,23,42,0.8);
+
+  border: 1px solid rgba(255,255,255,0.05);
+
+  border-radius: 16px;
+
+  padding: 20px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-analysis h4{
+  color: var(--indigo-light);
+
+  font-size: 15px;
+
+  font-weight: 700;
+
+  letter-spacing: .3px;
+}
+
+.ai-analysis p{
+  color: #d1d5db;
+
+  font-size: 14px;
+
+  line-height: 1.8;
+
+  white-space: pre-wrap;
+}
+
+/* EMPTY */
+
+.results-panel p{
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:900px){
+
+  .score-grid{
+    grid-template-columns: 1fr;
+  }
+
+}
