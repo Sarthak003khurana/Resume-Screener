@@ -7,14 +7,28 @@ from vector_store import add_documents, search
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
+from keybert import KeyBERT
 
-# Load embedding model safely
+
+# LOAD EMBEDDING MODEL
 try:
-    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+    model = SentenceTransformer(
+        "sentence-transformers/all-MiniLM-L6-v2",
+        cache_folder="./models"
+    )
+
     print("Embedding model loaded")
+
 except Exception as e:
+
     print("Model load error:", e)
+
     model = None
+
+
+# KEYBERT MODEL
+kw_model = KeyBERT(model=model)
 
 
 # CLEAN TEXT
@@ -31,17 +45,7 @@ def clean_text(text):
     return text.lower().strip()
 
 
-# SKILLS
-SKILLS_LIST = {
-    "python","java","c++","javascript","c","sql",
-    "machine learning","deep learning","nlp",
-    "data analysis","statistics","pandas","numpy",
-    "react","node","html","css","django","flask",
-    "spring","angular",
-    "git","docker","kubernetes","aws","azure"
-}
-
-
+# ROLE KEYWORDS (OPTIONAL BOOST)
 ROLE_TO_SKILLS = {
     "software engineer": ["java","python","c++","sql","git"],
     "data scientist": ["python","machine learning","pandas","statistics","sql"],
@@ -56,12 +60,22 @@ def extract_pdf_text(file):
 
     try:
 
-        pdf = fitz.open(stream=file.read(), filetype="pdf")
+        file_bytes = file.read()
+
+        pdf = fitz.open(
+            stream=file_bytes,
+            filetype="pdf"
+        )
 
         for page in pdf:
-            text += page.get_text()
+
+            page_text = page.get_text()
+
+            if page_text:
+                text += page_text
 
     except Exception as e:
+
         print("PDF ERROR:", e)
 
     return text
@@ -82,26 +96,40 @@ def extract_name(text):
     return "Unknown Candidate"
 
 
-# EXTRACT SKILLS
+# DYNAMIC AI SKILL EXTRACTION
 def extract_skills(text):
 
-    words = set(text.split())
+    if not text:
+        return []
 
-    found_skills = []
+    try:
 
-    for skill in SKILLS_LIST:
+        keywords = kw_model.extract_keywords(
 
-        if " " in skill:
+            text,
 
-            if skill in text:
-                found_skills.append(skill)
+            keyphrase_ngram_range=(1, 2),
 
-        else:
+            stop_words="english",
 
-            if skill in words:
-                found_skills.append(skill)
+            top_n=15
 
-    return list(set(found_skills))
+        )
+
+        skills = []
+
+        for keyword, score in keywords:
+
+            if len(keyword) > 2:
+                skills.append(keyword.lower())
+
+        return list(set(skills))
+
+    except Exception as e:
+
+        print("KEYBERT ERROR:", e)
+
+        return []
 
 
 # SEMANTIC SIMILARITY
@@ -131,25 +159,55 @@ def semantic_similarity(resume_text, jd_text):
 
 
 # OLLAMA AI ANALYSIS
-def generate_ai_response(resume_text, job_description):
+def generate_ai_response(
+    resume_text,
+    job_description,
+    detailed=False
+):
 
-    prompt = f"""
-    You are an expert AI recruiter.
+    # DETAILED REPORT FOR TOP CANDIDATE
+    if detailed:
 
-    Analyze this candidate resume against the job description.
+        prompt = f"""
+        You are an expert AI recruiter.
 
-    Return:
-    1. Candidate strengths
-    2. Missing skills
-    3. Suitability for role
-    4. Final recommendation
+        Analyze the candidate professionally.
 
-    JOB DESCRIPTION:
-    {job_description}
+        Include:
+        - strengths
+        - missing skills
+        - role suitability
+        - final hiring recommendation
 
-    RESUME:
-    {resume_text}
-    """
+        Keep response detailed but readable.
+
+        JOB DESCRIPTION:
+        {job_description}
+
+        RESUME:
+        {resume_text}
+        """
+
+    # SHORT REPORT FOR OTHER CANDIDATES
+    else:
+
+        prompt = f"""
+        You are an AI recruiter.
+
+        Give ONLY 3 short hiring insights.
+
+        Rules:
+        - short sentences
+        - no headings
+        - no numbering
+        - no markdown
+
+        JOB DESCRIPTION:
+        {job_description}
+
+        RESUME:
+        {resume_text}
+        """
 
     try:
 
@@ -161,13 +219,17 @@ def generate_ai_response(resume_text, job_description):
                 "model": "llama3",
                 "prompt": prompt,
                 "stream": False
-            }
+            },
 
+            timeout=120
         )
 
         data = response.json()
 
-        return data.get("response", "No AI response")
+        if "response" in data:
+            return data["response"].strip()
+
+        return "No AI response"
 
     except Exception as e:
 
@@ -185,6 +247,7 @@ def analyze_resumes(job_description, resumes):
 
     jd_skills = extract_skills(cleaned_jd)
 
+    # OPTIONAL ROLE BOOST
     for role, skills in ROLE_TO_SKILLS.items():
 
         if role in cleaned_jd:
@@ -207,13 +270,16 @@ def analyze_resumes(job_description, resumes):
 
         cleaned_resume = clean_text(text)
 
-        # FAISS VECTOR STORE
+        # VECTOR STORE
         try:
+
             add_documents([cleaned_resume])
+
         except Exception as e:
+
             print("FAISS ERROR:", e)
 
-        # SKILLS
+        # EXTRACT SKILLS
         resume_skills = extract_skills(cleaned_resume)
 
         matched_skills = list(
@@ -235,10 +301,14 @@ def analyze_resumes(job_description, resumes):
             semantic_score * 0.4
         ) * 10
 
+        # DETAILED REPORT ONLY FOR FIRST CANDIDATE
+        detailed_report = len(results) == 0
+
         # AI ANALYSIS
         ai_response = generate_ai_response(
             cleaned_resume,
-            cleaned_jd
+            cleaned_jd,
+            detailed=detailed_report
         )
 
         results.append({
@@ -251,7 +321,7 @@ def analyze_resumes(job_description, resumes):
 
             "semantic_score": round(float(semantic_score * 10), 2),
 
-            "matched_skills": matched_skills,
+            "matched_skills": matched_skills[:10],
 
             "ai_analysis": ai_response
 
