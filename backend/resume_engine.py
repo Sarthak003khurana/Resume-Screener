@@ -47,9 +47,21 @@ def clean_text(text):
 
 # ROLE KEYWORDS (OPTIONAL BOOST)
 ROLE_TO_SKILLS = {
-    "software engineer": ["java","python","c++","sql","git"],
-    "data scientist": ["python","machine learning","pandas","statistics","sql"],
-    "web developer": ["html","css","javascript","react","node"]
+
+    "software engineer": [
+        "java", "python", "c++",
+        "sql", "git"
+    ],
+
+    "data scientist": [
+        "python", "machine learning",
+        "pandas", "statistics", "sql"
+    ],
+
+    "web developer": [
+        "html", "css",
+        "javascript", "react", "node"
+    ]
 }
 
 
@@ -90,46 +102,164 @@ def extract_name(text):
 
         line = line.strip()
 
-        if 2 <= len(line.split()) <= 4 and not any(char.isdigit() for char in line):
+        if (
+            2 <= len(line.split()) <= 4
+            and not any(char.isdigit() for char in line)
+        ):
+
             return line
 
     return "Unknown Candidate"
 
 
-# DYNAMIC AI SKILL EXTRACTION
+# HYBRID AI SKILL EXTRACTION
 def extract_skills(text):
 
     if not text:
         return []
 
+    detected_skills = set()
+
+    # STATIC SKILL DATABASE
+    STATIC_SKILLS = {
+
+        # PROGRAMMING
+        "python", "java", "c++", "c", "javascript",
+        "react", "node", "flask", "django",
+        "html", "css", "sql",
+
+        # AI / DATA
+        "machine learning", "deep learning",
+        "nlp", "pandas", "numpy",
+        "data analysis", "statistics",
+
+        # TOOLS
+        "aws", "azure", "docker",
+        "git", "kubernetes",
+
+        # HR
+        "recruitment", "talent acquisition",
+        "employee engagement", "payroll",
+
+        # MARKETING
+        "seo", "digital marketing",
+        "content marketing",
+        "social media marketing",
+
+        # FINANCE
+        "financial analysis",
+        "accounting", "budgeting",
+
+        # BUSINESS
+        "communication",
+        "leadership",
+        "project management",
+        "problem solving"
+    }
+
+    cleaned_text = text.lower()
+
+    # -----------------------------------
+    # STEP 1 → STATIC SKILL MATCHING
+    # -----------------------------------
+    for skill in STATIC_SKILLS:
+
+        if skill in cleaned_text:
+            detected_skills.add(skill)
+
+    # -----------------------------------
+    # STEP 2 → KEYBERT EXTRACTION
+    # -----------------------------------
     try:
 
         keywords = kw_model.extract_keywords(
 
             text,
 
-            keyphrase_ngram_range=(1, 2),
+            keyphrase_ngram_range=(1, 3),
 
             stop_words="english",
 
-            top_n=15
+            top_n=25
 
         )
 
-        skills = []
+        raw_keywords = []
 
         for keyword, score in keywords:
 
-            if len(keyword) > 2:
-                skills.append(keyword.lower())
+            keyword = keyword.lower().strip()
 
-        return list(set(skills))
+            if len(keyword) > 2:
+
+                raw_keywords.append(keyword)
 
     except Exception as e:
 
         print("KEYBERT ERROR:", e)
 
-        return []
+        raw_keywords = []
+
+    # -----------------------------------
+    # STEP 3 → OLLAMA CLEANING
+    # -----------------------------------
+    try:
+
+        prompt = f"""
+        You are an AI skill extraction system.
+
+        Extract ONLY real professional skills.
+
+        Rules:
+        - Return only comma separated skills
+        - No explanation
+        - No numbering
+        - Remove generic words
+        - Keep only useful professional skills
+
+        KEYWORDS:
+        {", ".join(raw_keywords)}
+        """
+
+        response = requests.post(
+
+            "http://localhost:11434/api/generate",
+
+            json={
+
+                "model": "llama3",
+
+                "prompt": prompt,
+
+                "stream": False
+
+            },
+
+            timeout=120
+        )
+
+        data = response.json()
+
+        result = data.get("response", "")
+
+        ai_skills = [
+
+            skill.strip().lower()
+
+            for skill in result.split(",")
+
+            if skill.strip()
+        ]
+
+        for skill in ai_skills:
+
+            detected_skills.add(skill)
+
+    except Exception as e:
+
+        print("OLLAMA SKILL ERROR:", e)
+
+    return list(detected_skills)
 
 
 # SEMANTIC SIMILARITY
