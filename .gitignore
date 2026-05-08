@@ -4,3 +4,4 @@ ResumeSERV
 _pycache__
 cache
 models
+.venv
