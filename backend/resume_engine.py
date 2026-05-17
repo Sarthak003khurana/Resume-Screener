@@ -324,7 +324,7 @@ def generate_ai_response(
         prompt = f"""
         You are an AI recruiter.
 
-        Give ONLY 3 short hiring insights.
+        Give ONLY 2 short hiring insights.
 
         Rules:
         - short sentences
