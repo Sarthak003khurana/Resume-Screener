@@ -5,3 +5,5 @@ _pycache__
 cache
 models
 .env
+.venv
+
