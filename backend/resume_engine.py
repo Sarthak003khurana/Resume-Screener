@@ -45,7 +45,7 @@ def clean_text(text):
     return text.lower().strip()
 
 
-# ROLE KEYWORDS (OPTIONAL BOOST)
+# ROLE KEYWORDS
 ROLE_TO_SKILLS = {
 
     "software engineer": [
@@ -65,7 +65,42 @@ ROLE_TO_SKILLS = {
 }
 
 
-# PDF EXTRACTION USING MUPDF
+# IMPORTANT TECH SKILLS
+IMPORTANT_SKILLS = {
+
+    # PROGRAMMING
+    "python", "java", "c++", "c",
+    "javascript", "typescript",
+
+    # WEB
+    "react", "nextjs", "node",
+    "flask", "django",
+    "html", "css", "tailwind",
+
+    # DATABASE
+    "sql", "mongodb", "firebase",
+
+    # AI / DATA
+    "machine learning",
+    "deep learning",
+    "nlp",
+    "pandas",
+    "numpy",
+    "data analysis",
+    "statistics",
+
+    # CLOUD / TOOLS
+    "aws", "azure",
+    "docker", "git",
+    "kubernetes",
+
+    # GENERAL
+    "frontend",
+    "backend"
+}
+
+
+# PDF EXTRACTION
 def extract_pdf_text(file):
 
     text = ""
@@ -112,7 +147,7 @@ def extract_name(text):
     return "Unknown Candidate"
 
 
-# HYBRID AI SKILL EXTRACTION
+# EXTRACT SKILLS
 def extract_skills(text):
 
     if not text:
@@ -120,49 +155,12 @@ def extract_skills(text):
 
     detected_skills = set()
 
-    # STATIC SKILL DATABASE
-    STATIC_SKILLS = {
-
-        # PROGRAMMING
-        "python", "java", "c++", "c", "javascript",
-        "react", "node", "flask", "django",
-        "html", "css", "sql",
-
-        # AI / DATA
-        "machine learning", "deep learning",
-        "nlp", "pandas", "numpy",
-        "data analysis", "statistics",
-
-        # TOOLS
-        "aws", "azure", "docker",
-        "git", "kubernetes",
-
-        # HR
-        "recruitment", "talent acquisition",
-        "employee engagement", "payroll",
-
-        # MARKETING
-        "seo", "digital marketing",
-        "content marketing",
-        "social media marketing",
-
-        # FINANCE
-        "financial analysis",
-        "accounting", "budgeting",
-
-        # BUSINESS
-        "communication",
-        "leadership",
-        "project management",
-        "problem solving"
-    }
-
     cleaned_text = text.lower()
 
     # -----------------------------------
     # STEP 1 → STATIC SKILL MATCHING
     # -----------------------------------
-    for skill in STATIC_SKILLS:
+    for skill in IMPORTANT_SKILLS:
 
         if skill in cleaned_text:
             detected_skills.add(skill)
@@ -201,21 +199,19 @@ def extract_skills(text):
         raw_keywords = []
 
     # -----------------------------------
-    # STEP 3 → OLLAMA CLEANING
+    # STEP 3 → OLLAMA FILTERING
     # -----------------------------------
     try:
 
         prompt = f"""
-        You are an AI skill extraction system.
-
-        Extract ONLY real professional skills.
+        Extract ONLY technical skills.
 
         Rules:
-        - Return only comma separated skills
+        - Return comma separated skills only
         - No explanation
         - No numbering
-        - Remove generic words
-        - Keep only useful professional skills
+        - No soft skills
+        - Only technical/professional skills
 
         KEYWORDS:
         {", ".join(raw_keywords)}
@@ -235,7 +231,7 @@ def extract_skills(text):
 
             },
 
-            timeout=120
+            timeout=60
         )
 
         data = response.json()
@@ -251,9 +247,11 @@ def extract_skills(text):
             if skill.strip()
         ]
 
+        # FILTER ONLY IMPORTANT SKILLS
         for skill in ai_skills:
 
-            detected_skills.add(skill)
+            if skill in IMPORTANT_SKILLS:
+                detected_skills.add(skill)
 
     except Exception as e:
 
@@ -288,14 +286,13 @@ def semantic_similarity(resume_text, jd_text):
         return 0
 
 
-# OLLAMA AI ANALYSIS
+# AI ANALYSIS
 def generate_ai_response(
     resume_text,
     job_description,
     detailed=False
 ):
 
-    # DETAILED REPORT FOR TOP CANDIDATE
     if detailed:
 
         prompt = f"""
@@ -318,7 +315,6 @@ def generate_ai_response(
         {resume_text}
         """
 
-    # SHORT REPORT FOR OTHER CANDIDATES
     else:
 
         prompt = f"""
@@ -377,7 +373,7 @@ def analyze_resumes(job_description, resumes):
 
     jd_skills = extract_skills(cleaned_jd)
 
-    # OPTIONAL ROLE BOOST
+    # ROLE BOOST
     for role, skills in ROLE_TO_SKILLS.items():
 
         if role in cleaned_jd:
@@ -417,7 +413,10 @@ def analyze_resumes(job_description, resumes):
         )
 
         # SKILL SCORE
-        skill_score = len(matched_skills) / max(len(jd_skills), 1)
+        skill_score = len(matched_skills) / max(
+            min(len(jd_skills), len(resume_skills)),
+            1
+        )
 
         # SEMANTIC SCORE
         semantic_score = semantic_similarity(
@@ -427,11 +426,11 @@ def analyze_resumes(job_description, resumes):
 
         # FINAL SCORE
         final_score = (
-            skill_score * 0.6 +
-            semantic_score * 0.4
+            skill_score * 0.9 +
+            semantic_score * 0.1
         ) * 10
 
-        # DETAILED REPORT ONLY FOR FIRST CANDIDATE
+        # DETAILED REPORT ONLY FOR TOP CANDIDATE
         detailed_report = len(results) == 0
 
         # AI ANALYSIS
