@@ -1,0 +1,264 @@
+import { useEffect, useState } from "react";
+
+import { auth, db } from "../firebase";
+
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy
+} from "firebase/firestore";
+
+import "../styles/pastscreenings.css";
+
+
+export default function PastScreenings() {
+
+  const [history, setHistory] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+
+  useEffect(() => {
+
+    loadHistory();
+
+  }, []);
+
+
+  const loadHistory = async () => {
+
+    try {
+
+      const user = auth.currentUser;
+
+      if (!user) return;
+
+      const q = query(
+
+        collection(db, "screening_history"),
+
+        where("userId", "==", user.uid),
+
+        orderBy("createdAt", "desc")
+      );
+
+      const snapshot = await getDocs(q);
+
+      const data = snapshot.docs.map(doc => ({
+
+        id: doc.id,
+
+        ...doc.data()
+      }));
+
+      setHistory(data);
+
+    } catch (err) {
+
+      console.log("History Error:", err);
+
+    } finally {
+
+      setLoading(false);
+    }
+  };
+
+
+  if (loading) {
+
+    return (
+
+      <div className="past-screenings-page">
+
+        <h1>Past Screenings</h1>
+
+        <p>Loading screenings...</p>
+
+      </div>
+    );
+  }
+
+
+  return (
+
+    <div className="past-screenings-page">
+
+      <div className="page-header">
+
+        <h1>Past Screenings</h1>
+
+        <p>
+          View all previously analyzed resumes
+        </p>
+
+      </div>
+
+
+      {
+
+        history.length === 0 ? (
+
+          <div className="empty-history">
+
+            <p>No screening history found.</p>
+
+          </div>
+
+        ) : (
+
+          history.map((item, index) => (
+
+            <div
+              key={index}
+              className="screening-card"
+            >
+
+              <div className="screening-top">
+
+                <h2>
+
+                  Screening #{index + 1}
+
+                </h2>
+
+                <span className="screening-date">
+
+                  {
+
+                    new Date(
+                      item.createdAt
+                    ).toLocaleString()
+
+                  }
+
+                </span>
+
+              </div>
+
+
+              <div className="jd-section">
+
+                <h3>Job Description</h3>
+
+                <div className="jd-preview">
+
+                  {item.jobDescription}
+
+                </div>
+
+              </div>
+
+
+              <div className="candidate-section">
+
+                <h3>
+
+                  Candidates Analyzed (
+                  {item.results.length}
+                  )
+
+                </h3>
+
+
+                <div className="candidate-grid">
+
+                  {
+
+                    item.results.map((candidate, i) => (
+
+                      <div
+                        key={i}
+                        className="candidate-card"
+                      >
+
+                        <div className="candidate-header">
+
+                          <h4>
+                            {candidate.name}
+                          </h4>
+
+                          <span className="candidate-score">
+
+                            {candidate.score}/10
+
+                          </span>
+
+                        </div>
+
+
+                        <div className="candidate-details">
+
+                          <p>
+
+                            <strong>Skill Score:</strong>{" "}
+
+                            {candidate.skill_score}
+
+                          </p>
+
+                          <p>
+
+                            <strong>Semantic Score:</strong>{" "}
+
+                            {candidate.semantic_score}
+
+                          </p>
+
+                        </div>
+
+
+                        <div className="skills-section">
+
+                          <strong>Matched Skills:</strong>
+
+                          <div className="skills-wrap">
+
+                            {
+
+                              candidate.matched_skills?.map(
+
+                                (skill, idx) => (
+
+                                  <span
+                                    key={idx}
+                                    className="skill-tag"
+                                  >
+
+                                    {skill}
+
+                                  </span>
+                                )
+                              )
+                            }
+
+                          </div>
+                        </div>
+
+
+                        <div className="ai-analysis">
+
+                          <strong>AI Analysis:</strong>
+
+                          <p>
+
+                            {candidate.ai_analysis}
+
+                          </p>
+
+                        </div>
+
+                      </div>
+                    ))
+                  }
+
+                </div>
+              </div>
+            </div>
+          ))
+        )
+      }
+    </div>
+  );
+}

@@ -1,0 +1,80 @@
+.past-screenings-page {
+  padding: 24px;
+  color: white;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.screening-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.screening-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.screening-date {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.jd-preview {
+  margin-top: 10px;
+  background: #1f2937;
+  padding: 12px;
+  border-radius: 10px;
+  line-height: 1.5;
+}
+
+.candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.candidate-card {
+  background: #1f2937;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.candidate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.candidate-score {
+  background: #2563eb;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.skills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.skill-tag {
+  background: #374151;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.ai-analysis {
+  margin-top: 14px;
+  line-height: 1.5;
+}
