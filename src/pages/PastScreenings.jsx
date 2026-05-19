@@ -6,8 +6,7 @@ import {
   collection,
   getDocs,
   query,
-  where,
-  orderBy
+  where
 } from "firebase/firestore";
 
 import "../styles/pastscreenings.css";
@@ -33,15 +32,19 @@ export default function PastScreenings() {
 
       const user = auth.currentUser;
 
-      if (!user) return;
+      if (!user) {
 
+        setLoading(false);
+
+        return;
+      }
+
+      // FIRESTORE QUERY
       const q = query(
 
         collection(db, "screening_history"),
 
-        where("userId", "==", user.uid),
-
-        orderBy("createdAt", "desc")
+        where("userId", "==", user.uid)
       );
 
       const snapshot = await getDocs(q);
@@ -53,11 +56,20 @@ export default function PastScreenings() {
         ...doc.data()
       }));
 
+
+      // SORT LATEST FIRST
+      data.sort(
+        (a, b) => b.createdAt - a.createdAt
+      );
+
       setHistory(data);
 
     } catch (err) {
 
-      console.log("History Error:", err);
+      console.log(
+        "History Error:",
+        err
+      );
 
     } finally {
 
@@ -66,6 +78,7 @@ export default function PastScreenings() {
   };
 
 
+  // LOADING STATE
   if (loading) {
 
     return (
@@ -85,6 +98,7 @@ export default function PastScreenings() {
 
     <div className="past-screenings-page">
 
+      {/* HEADER */}
       <div className="page-header">
 
         <h1>Past Screenings</h1>
@@ -96,13 +110,16 @@ export default function PastScreenings() {
       </div>
 
 
+      {/* EMPTY STATE */}
       {
 
         history.length === 0 ? (
 
           <div className="empty-history">
 
-            <p>No screening history found.</p>
+            <p>
+              No screening history found.
+            </p>
 
           </div>
 
@@ -115,6 +132,7 @@ export default function PastScreenings() {
               className="screening-card"
             >
 
+              {/* TOP */}
               <div className="screening-top">
 
                 <h2>
@@ -138,9 +156,12 @@ export default function PastScreenings() {
               </div>
 
 
+              {/* JOB DESCRIPTION */}
               <div className="jd-section">
 
-                <h3>Job Description</h3>
+                <h3>
+                  Job Description
+                </h3>
 
                 <div className="jd-preview">
 
@@ -151,12 +172,13 @@ export default function PastScreenings() {
               </div>
 
 
+              {/* CANDIDATES */}
               <div className="candidate-section">
 
                 <h3>
 
                   Candidates Analyzed (
-                  {item.results.length}
+                  {item.results?.length || 0}
                   )
 
                 </h3>
@@ -166,99 +188,119 @@ export default function PastScreenings() {
 
                   {
 
-                    item.results.map((candidate, i) => (
+                    item.results?.map(
+                      (candidate, i) => (
 
-                      <div
-                        key={i}
-                        className="candidate-card"
-                      >
+                        <div
+                          key={i}
+                          className="candidate-card"
+                        >
 
-                        <div className="candidate-header">
+                          {/* HEADER */}
+                          <div className="candidate-header">
 
-                          <h4>
-                            {candidate.name}
-                          </h4>
+                            <h4>
 
-                          <span className="candidate-score">
+                              {candidate.name}
 
-                            {candidate.score}/10
+                            </h4>
 
-                          </span>
+                            <span className="candidate-score">
 
-                        </div>
+                              {candidate.score}/10
 
-
-                        <div className="candidate-details">
-
-                          <p>
-
-                            <strong>Skill Score:</strong>{" "}
-
-                            {candidate.skill_score}
-
-                          </p>
-
-                          <p>
-
-                            <strong>Semantic Score:</strong>{" "}
-
-                            {candidate.semantic_score}
-
-                          </p>
-
-                        </div>
-
-
-                        <div className="skills-section">
-
-                          <strong>Matched Skills:</strong>
-
-                          <div className="skills-wrap">
-
-                            {
-
-                              candidate.matched_skills?.map(
-
-                                (skill, idx) => (
-
-                                  <span
-                                    key={idx}
-                                    className="skill-tag"
-                                  >
-
-                                    {skill}
-
-                                  </span>
-                                )
-                              )
-                            }
+                            </span>
 
                           </div>
+
+
+                          {/* DETAILS */}
+                          <div className="candidate-details">
+
+                            <p>
+
+                              <strong>
+                                Skill Score:
+                              </strong>{" "}
+
+                              {candidate.skill_score}
+
+                            </p>
+
+                            <p>
+
+                              <strong>
+                                Semantic Score:
+                              </strong>{" "}
+
+                              {candidate.semantic_score}
+
+                            </p>
+
+                          </div>
+
+
+                          {/* SKILLS */}
+                          <div className="skills-section">
+
+                            <strong>
+                              Matched Skills:
+                            </strong>
+
+                            <div className="skills-wrap">
+
+                              {
+
+                                candidate.matched_skills?.map(
+
+                                  (skill, idx) => (
+
+                                    <span
+                                      key={idx}
+                                      className="skill-tag"
+                                    >
+
+                                      {skill}
+
+                                    </span>
+                                  )
+                                )
+                              }
+
+                            </div>
+
+                          </div>
+
+
+                          {/* AI ANALYSIS */}
+                          <div className="ai-analysis">
+
+                            <strong>
+                              AI Analysis:
+                            </strong>
+
+                            <p>
+
+                              {candidate.ai_analysis}
+
+                            </p>
+
+                          </div>
+
                         </div>
-
-
-                        <div className="ai-analysis">
-
-                          <strong>AI Analysis:</strong>
-
-                          <p>
-
-                            {candidate.ai_analysis}
-
-                          </p>
-
-                        </div>
-
-                      </div>
-                    ))
+                      )
+                    )
                   }
 
                 </div>
+
               </div>
+
             </div>
           ))
         )
       }
+
     </div>
   );
 }
