@@ -25,4 +25,4 @@ echo ===============================
 echo Servers are starting...
 echo ===============================
 
-pause
+pause 
