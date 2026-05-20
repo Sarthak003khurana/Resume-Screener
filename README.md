@@ -470,6 +470,6 @@ History remains persistent after:
 
 # 👨‍💻 Developed By
 
-## Sarthak Khurana  ## Shivani Jindal
+## Sarthak Khurana , Shivani Jindal
 
 AI-Powered Resume Screening & Matching Platform.
